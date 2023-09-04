@@ -6,7 +6,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func NewDb(dbFile string) (*sqlx.DB, error) {
+func NewDb() (*sqlx.DB, error) {
 	conn, err := sqlx.Connect("postgres", "user=postgres password=1 dbname=filebalancer sslmode=disable")
 	if err != nil {
 		log.Error().Err(err).Msg("Can't connect sqlite3")
