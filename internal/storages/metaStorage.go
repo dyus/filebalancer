@@ -10,13 +10,13 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-type FileMeta struct {
+type dbFileMeta struct {
 	ContentLength int64  `json:"content_length"`
 	Number        int    `json:"number"`
 	StorageUrl    string `json:"storage_url"`
 }
 
-type FileMetaArr []FileMeta
+type FileMetaArr []dbFileMeta
 
 type File struct {
 	Id            int         `db:"id"`

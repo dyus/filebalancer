@@ -1,5 +1,6 @@
 package server
 
+// Code for testing some library usage. Which i'm not sure and try to understand
 import (
 	"filebalancer/internal/storages"
 	"fmt"
@@ -8,7 +9,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func SampleDbQuering(db *sqlx.DB) {
+func SampleDbQuerying(db *sqlx.DB) {
 
 	metaStorage := storages.FileStorage{Db: db}
 	meta := storages.FileMetaArr{
