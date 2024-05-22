@@ -1,19 +1,26 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"log"
-	"net/http"
-	"time"
+	"os"
 
-	"github.com/dyus/filebalancer/api"
+	"github.com/dyus/filebalancer/app"
+	"github.com/heetch/confita"
+	"github.com/heetch/confita/backend/env"
+	"github.com/heetch/confita/backend/file"
 )
 
 func main() {
-	srv := &http.Server{
-		Handler:      api.NewRouter(),
-		Addr:         "127.0.0.1:8080",
-		WriteTimeout: 15 * time.Second,
-		ReadTimeout:  15 * time.Second,
+	configPath := "./configs/config.yaml"
+	loader := confita.NewLoader(env.NewBackend(), file.NewBackend(configPath))
+	config := &app.Config{}
+	if err := loader.Load(context.Background(), config); err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "can't load config: %s\n", err)
+		os.Exit(1)
 	}
+
+	srv := app.NewHttp(&config.HTTP)
 	log.Fatal(srv.ListenAndServe())
 }
