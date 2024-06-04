@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/dyus/filebalancer/app"
+	"github.com/dyus/filebalancer/internal/storage"
 	"github.com/heetch/confita"
 	"github.com/heetch/confita/backend/env"
 	"github.com/heetch/confita/backend/file"
@@ -21,6 +22,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	srv := app.NewHttp(&config.HTTP)
+	fileStorage := storage.NewInMemory()
+	srv := app.NewHttp(&config.HTTP, fileStorage)
+	log.Printf("Server started at http://%s\n", config.HTTP.Addr)
 	log.Fatal(srv.ListenAndServe())
 }
