@@ -1,2 +1,5 @@
 http:
   addr: "127.0.0.1:8000"
+storage:
+  num_of_storages: 5
+  type: "InMemory"
