@@ -7,7 +7,7 @@ import (
 )
 
 type Storage interface {
-	UploadFile(string, io.Reader) error
+	UploadFile(io.Reader) (string, error)
 	ReadFile(string) io.ReadCloser
 }
 
