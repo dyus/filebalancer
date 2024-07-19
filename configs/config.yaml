@@ -1,5 +1,16 @@
 http:
-  addr: "127.0.0.1:8000"
+  addr: "127.0.0.1:8080"
+
+shutdown_timeout: "10s"
+chunks_count: 5
+
 storage:
   num_of_storages: 5
   type: "InMemory"
+
+db:
+  user: meta
+  name: meta
+  password: meta
+  host: 127.0.0.1
+  port: 5432

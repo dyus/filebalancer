@@ -5,6 +5,8 @@ go 1.22.3
 require (
 	github.com/gorilla/mux v1.8.1
 	github.com/heetch/confita v0.10.0
+	github.com/jmoiron/sqlx v1.4.0
+	github.com/lib/pq v1.10.9
 )
 
 require (
