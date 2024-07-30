@@ -14,11 +14,11 @@ func (m *Application) Run() error {
 	return m.server.ListenAndServe()
 }
 func NewApplication(conf *Config) (*Application, error) {
-	db, err := newDb(&conf.DBConfig)
+	db, err := NewDb(&conf.DBConfig)
 	if err != nil {
 		return nil, err
 	}
-	metaStorage := newMetaStorage(db)
+	metaStorage := NewMetaStorage(db)
 	fileService := newFileService(conf, metaStorage)
 	return &Application{
 		server:          NewHttp(&conf.HTTP, fileService),
