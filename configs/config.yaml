@@ -14,3 +14,16 @@ db:
   password: meta
   host: 127.0.0.1
   port: 5432
+
+balancer:
+  hosts:
+    - host1
+    - host2
+    - host3
+    - host4
+    - host5
+    - host6
+    - host7
+    - host8
+    - host9
+    - host10

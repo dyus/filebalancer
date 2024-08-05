@@ -8,7 +8,7 @@ import (
 )
 
 type MetaStorage interface {
-	Save(string, int, []FilePart) error
+	Save(string, int64, []FilePart) error
 	Get(string) (*fileMeta, error)
 }
 
@@ -25,7 +25,7 @@ type FilePartList []FilePart
 type fileMeta struct {
 	Id            int          `db:"id"`
 	Name          string       `db:"name"`
-	ContentLength int          `db:"content_length"`
+	ContentLength int64        `db:"content_length"`
 	FileParts     FilePartList `db:"parts"`
 }
 
@@ -45,7 +45,7 @@ func (f *FilePartList) Scan(val interface{}) error {
 	return json.Unmarshal(val.([]byte), &f)
 }
 
-func (m *pgMetaStorage) Save(path string, contentLength int, parts []FilePart) error {
+func (m *pgMetaStorage) Save(path string, contentLength int64, parts []FilePart) error {
 	fileMeta := fileMeta{Name: path, ContentLength: contentLength, FileParts: parts}
 	_, err := m.db.Exec(`INSERT INTO file_meta (name, content_length, parts)
 		VALUES ($1, $2, $3)`,

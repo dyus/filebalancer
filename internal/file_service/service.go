@@ -1,39 +1,38 @@
 package file_service
 
 import (
-	"bytes"
 	"io"
 
+	"github.com/dyus/filebalancer/internal/balancer"
 	"github.com/dyus/filebalancer/internal/storage"
 )
 
 type IFileService interface {
 	ReadFile(string) io.ReadCloser
-	SaveFile(string, io.Reader, int) error
+	SaveFile(string, io.Reader, int64) error
 }
 
 type fileService struct {
-	storages    map[string]storage.Storage
-	metaStorage storage.MetaStorage
-	chunksCount int
+	storageService *storage.StorageService
+	metaStorage    storage.MetaStorage
+	chunksCount    int64
+	balancer       balancer.Balancer
 }
 
-func (fs *fileService) SaveFile(fileName string, body io.Reader, fileSize int) error {
+func (fs *fileService) SaveFile(fileName string, body io.Reader, fileSize int64) error {
 	chunkSize := fileSize / fs.chunksCount
 
-	chunk := make([]byte, 0, chunkSize)
 	parts := make([]storage.FilePart, fs.chunksCount)
-
-	for {
-		_, err := body.Read(chunk)
-		if err == io.EOF {
-			break
-		}
+	hosts := fs.balancer.GetHosts(int(fs.chunksCount))
+	storageIndex := 0
+	for range fs.chunksCount {
+		limit_body := io.LimitReader(body, chunkSize)
+		choosenStorage := fs.storageService.Storages[hosts[storageIndex]]
+		storageIndex += 1
+		path, err := choosenStorage.UploadFile(limit_body)
 		if err != nil {
 			return err
 		}
-		choosenStorage := fs.chooseStorage()
-		path, err := choosenStorage.UploadFile(bytes.NewReader(chunk))
 		parts = append(parts, storage.FilePart{Path: path, ContentLength: 1})
 	}
 	fs.metaStorage.Save(fileName, fileSize, parts)
@@ -46,15 +45,11 @@ func (fs *fileService) ReadFile(name string) io.ReadCloser {
 	panic("not implemented")
 }
 
-func (fs *fileService) chooseStorage() storage.Storage {
-	// TODO choose somehow
-	panic("not implemented")
-}
-
-func NewFileService(storages map[string]storage.Storage, metaStorage storage.MetaStorage, chunksCount int) IFileService {
+func NewFileService(balancer balancer.Balancer, storageService *storage.StorageService, metaStorage storage.MetaStorage, chunksCount int64) IFileService {
 	return &fileService{
-		storages,
+		storageService,
 		metaStorage,
 		chunksCount,
+		balancer,
 	}
 }

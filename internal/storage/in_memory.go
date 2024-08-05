@@ -16,7 +16,6 @@ func (i *InMemory) UploadFile(body io.Reader) (string, error) {
 		return "", err
 	}
 	i.data[path] = data
-
 	return path, nil
 }
 

@@ -19,7 +19,10 @@ func NewApplication(conf *Config) (*Application, error) {
 		return nil, err
 	}
 	metaStorage := NewMetaStorage(db)
-	fileService := newFileService(conf, metaStorage)
+	fileService, err := newFileService(conf, metaStorage)
+	if err != nil {
+		return nil, err
+	}
 	return &Application{
 		server:          NewHttp(&conf.HTTP, fileService),
 		shutdownTimeout: conf.ShutdownTimeout,

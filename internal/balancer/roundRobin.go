@@ -1,13 +1,15 @@
 package balancer
 
-import "sync/atomic"
+import (
+	"sync/atomic"
+)
 
 type Balancer interface {
 	GetHosts(int) []string
 }
 type roundRobin struct {
 	hosts   []string
-	current *atomic.Uint32
+	current atomic.Uint32
 }
 
 func (r *roundRobin) GetHosts(count int) []string {

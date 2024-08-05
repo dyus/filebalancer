@@ -12,20 +12,20 @@ type Storage interface {
 }
 
 type StorageService struct {
-	storages map[int]Storage
+	Storages map[string]Storage
 }
 
-func NewStorageService(storageType string, num int) (*StorageService, error) {
+func NewStorageService(storageType string, names []string) (*StorageService, error) {
 	if storageType != "InMemory" {
 		return nil, errors.New(fmt.Sprintf("Unknown type %s", storageType))
 	}
 
-	storages := make(map[int]Storage)
-	for num := range num {
-		storages[num] = NewInMemory()
+	storages := make(map[string]Storage)
+	for _, name := range names {
+		storages[name] = NewInMemory()
 	}
 
 	return &StorageService{
-		storages: storages,
+		Storages: storages,
 	}, nil
 }
