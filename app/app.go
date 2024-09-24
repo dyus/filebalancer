@@ -18,8 +18,11 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+const CleanUpTime = 24 * time.Hour
+
 type Application struct {
 	server          *http.Server
+	fileService     fileservice.IFileService
 	shutdownTimeout time.Duration
 }
 
@@ -30,6 +33,18 @@ func (m *Application) Run(ctx context.Context) error {
 
 		if err := m.server.ListenAndServe(); err != nil {
 			return fmt.Errorf("listen and serve error: %w", err)
+		}
+
+		return nil
+	})
+
+	cleanUpTicker := time.NewTicker(CleanUpTime)
+	defer cleanUpTicker.Stop()
+
+	g.Go(func() error {
+		err := m.fileService.Cleanup(ctx, cleanUpTicker)
+		if err != nil {
+			return fmt.Errorf("can't execute cleanup task: %w", err)
 		}
 
 		return nil
@@ -93,6 +108,7 @@ func NewApplication(conf *Config) (*Application, error) {
 			Addr:    conf.HTTP.Addr,
 			Handler: api.NewRouter(fileService, balancer),
 		},
+		fileService:     fileService,
 		shutdownTimeout: conf.ShutdownTimeout,
 	}, nil
 }

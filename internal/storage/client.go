@@ -57,15 +57,17 @@ func (s *Client) Read(ctx context.Context, chunk *db.FilePart) (io.ReadCloser, e
 	}
 
 	resp, err := s.client.Do(req)
-	if resp != nil {
-		defer resp.Body.Close()
-	}
-
 	if err != nil {
+		if resp != nil {
+			defer resp.Body.Close()
+		}
+
 		return nil, err
 	}
 
 	if resp.StatusCode != http.StatusOK {
+		defer resp.Body.Close()
+
 		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 

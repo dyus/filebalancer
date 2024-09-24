@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"log"
+	"time"
 
 	"github.com/dyus/filebalancer/internal/balancer"
 	"github.com/dyus/filebalancer/internal/db"
@@ -15,6 +16,7 @@ import (
 type IFileService interface {
 	ReadFile(context.Context, string) (io.ReadCloser, error)
 	SaveFile(context.Context, string, io.Reader, int64) error
+	Cleanup(context.Context, *time.Ticker) error
 }
 
 type fileService struct {
@@ -31,10 +33,10 @@ func (fs *fileService) SaveFile(ctx context.Context, fileName string, body io.Re
 	}
 
 	hosts := fs.balancer.GetHosts(int(fs.chunksCount))
-	chunks := make([]*db.FilePart, 0, len(chunkSizes))
+	chunks := make([]db.FilePart, 0, len(chunkSizes))
 
 	for i, size := range chunkSizes {
-		part := &db.FilePart{
+		part := db.FilePart{
 			Storage: hosts[i], Path: uuid.NewString(), ContentLength: size,
 		}
 		chunks = append(chunks, part)
@@ -47,12 +49,8 @@ func (fs *fileService) SaveFile(ctx context.Context, fileName string, body io.Re
 	for _, chunk := range chunks {
 		limitBody := io.LimitReader(body, chunk.ContentLength)
 
-		err := fs.storageClient.Write(ctx, chunk, limitBody)
+		err := fs.storageClient.Write(ctx, &chunk, limitBody)
 		if err != nil {
-			if cleanErr := fs.cleanup(ctx, fileName); cleanErr != nil {
-				log.Printf("Can't cleanup data on bad save for file %s. error: %v\n", fileName, err)
-			}
-
 			return err
 		}
 	}
@@ -96,24 +94,35 @@ func (fs *fileService) calculateChunkSizes(fileSize int64) ([]int64, error) {
 	return chunks, nil
 }
 
-func (fs *fileService) cleanup(ctx context.Context, fileName string) error {
-	meta, err := fs.metaStorage.Get(ctx, fileName)
-	if err != nil {
-		return err
-	}
+func (fs *fileService) Cleanup(ctx context.Context, ticker *time.Ticker) error {
+	for {
+		select {
+		case <-ctx.Done():
+			log.Println("stop cleanup")
 
-	for _, chunk := range meta.FileParts {
-		err = fs.storageClient.Delete(ctx, chunk)
-		if err != nil {
-			return err
+			return ctx.Err()
+		case t := <-ticker.C:
+			log.Println("run cleanup at:", t)
+
+			staleMetas, err := fs.metaStorage.GetStale(ctx)
+			if err != nil {
+				return err
+			}
+
+			for _, meta := range staleMetas {
+				for _, chunk := range meta.FileParts {
+					err = fs.storageClient.Delete(ctx, &chunk)
+					if err != nil {
+						return err
+					}
+				}
+
+				if err = fs.metaStorage.Error(ctx, meta.Name); err != nil {
+					return err
+				}
+			}
 		}
 	}
-
-	if err = fs.metaStorage.Error(ctx, meta.Name); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 type ChunksReader struct {
@@ -168,7 +177,7 @@ func (cr *ChunksReader) next() error {
 
 	var err error
 
-	cr.currentFile, err = cr.storageClient.Read(cr.ctx, part)
+	cr.currentFile, err = cr.storageClient.Read(cr.ctx, &part)
 	if err != nil {
 		return err
 	}

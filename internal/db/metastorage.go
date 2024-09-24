@@ -5,6 +5,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -18,10 +19,11 @@ const (
 )
 
 type MetaStorage interface {
-	Create(context.Context, string, int64, []*FilePart) error
+	Create(context.Context, string, int64, []FilePart) error
 	Complete(context.Context, string) error
 	Error(context.Context, string) error
 	Get(context.Context, string) (*fileMeta, error)
+	GetStale(context.Context) ([]fileMeta, error)
 }
 
 type pgMetaStorage struct {
@@ -34,7 +36,7 @@ type FilePart struct {
 	ContentLength int64  `db:"content_length"`
 }
 
-type FilePartList []*FilePart
+type FilePartList []FilePart
 
 func (f FilePart) Value() (driver.Value, error) {
 	return json.Marshal(f)
@@ -68,9 +70,10 @@ type fileMeta struct {
 	ContentLength int64        `db:"content_length"`
 	FileParts     FilePartList `db:"parts"`
 	Status        FileStatus   `db:"status"`
+	CreatedAt     time.Time    `db:"created_at"`
 }
 
-func (m *pgMetaStorage) Create(ctx context.Context, path string, contentLength int64, parts []*FilePart) error {
+func (m *pgMetaStorage) Create(ctx context.Context, path string, contentLength int64, parts []FilePart) error {
 	fileMeta := fileMeta{Name: path, ContentLength: contentLength, FileParts: parts}
 	_, err := m.db.ExecContext(ctx, `INSERT INTO file_meta (name, content_length, parts, status)
 		VALUES ($1, $2, $3, $4)`,
@@ -100,6 +103,23 @@ func (m *pgMetaStorage) Get(ctx context.Context, name string) (*fileMeta, error)
 	}
 
 	return &fileMeta, nil
+}
+
+func (m *pgMetaStorage) GetStale(ctx context.Context) ([]fileMeta, error) {
+	fileMeta := []fileMeta{}
+	yestarday := time.Now().UTC().Add(-24 * time.Hour)
+
+	err := m.db.SelectContext(
+		ctx,
+		&fileMeta,
+		"SELECT * FROM file_meta WHERE status=$1 AND created_at<$2",
+		InProgress, yestarday,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return fileMeta, nil
 }
 
 func NewMetaStorage(db *sqlx.DB) MetaStorage {
