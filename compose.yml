@@ -1,0 +1,74 @@
+services:
+  server:
+    image: filebalancer:latest
+    build: .
+    command: "./server"
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./configs:/app/configs
+      - ./db:/app/db
+    depends_on:
+      db:
+        condition: service_healthy
+  storage-01:
+    image: filebalancer:latest
+    build: .
+    command: "./storage"
+    ports:
+      - "8090:8090"
+    environment:
+      - STORAGE_ADDR=0.0.0.0:8090
+  storage-02:
+    image: filebalancer:latest
+    build: .
+    command: "./storage"
+    ports:
+      - "8091:8090"
+    environment:
+      - STORAGE_ADDR=0.0.0.0:8090
+  storage-03:
+    image: filebalancer:latest
+    build: .
+    command: "./storage"
+    ports:
+      - "8092:8090"
+    environment:
+      - STORAGE_ADDR=0.0.0.0:8090
+  storage-04:
+    image: filebalancer:latest
+    build: .
+    command: "./storage"
+    ports:
+      - "8093:8090"
+    environment:
+      - STORAGE_ADDR=0.0.0.0:8090
+  storage-05:
+    image: filebalancer:latest
+    build: .
+    command: "./storage"
+    ports:
+      - "8094:8090"
+    environment:
+      - STORAGE_ADDR=0.0.0.0:8090
+  storage-06:
+    image: filebalancer:latest
+    build: .
+    command: "./storage"
+    ports:
+      - "8095:8090"
+    environment:
+      - STORAGE_ADDR=0.0.0.0:8090
+
+  db:
+    image: "postgres"
+    environment:
+      POSTGRES_USER: meta
+      POSTGRES_DB: meta
+      POSTGRES_PASSWORD: meta
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      retries: 5
+      start_period: 5s
+      timeout: 5s

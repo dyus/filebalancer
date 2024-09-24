@@ -1,0 +1,24 @@
+http:
+  addr: "0.0.0.0:8080"
+
+shutdown_timeout: "10s"
+chunks_count: 5
+
+storage:
+  num_of_storages: 5
+
+db:
+  user: meta
+  name: meta
+  password: meta
+  host: db
+  port: 5432
+
+balancer:
+  hosts:
+    - http://storage-01:8090
+    - http://storage-02:8090
+    - http://storage-03:8090
+    - http://storage-04:8090
+    - http://storage-05:8090
+    - http://storage-06:8090
